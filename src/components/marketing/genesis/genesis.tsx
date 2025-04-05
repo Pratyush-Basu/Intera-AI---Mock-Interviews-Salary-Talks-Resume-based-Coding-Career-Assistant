@@ -41,6 +41,7 @@ import {
   Upload,
   Volume2,
 } from "lucide-react";
+import { detectExtensions } from "@/utils/detectExtensions";
 
 // Add type definitions for Speech Recognition
 interface SpeechRecognition extends EventTarget {
@@ -91,6 +92,8 @@ interface InterviewSession {
   duration: number;
   status: "setup" | "active" | "completed";
   currentQuestion: string | null;
+  currentQuestionId: number; // Add a unique ID for each question to track changes
+  isLoadingQuestion: boolean; // Add a dedicated loading state for questions
   answers: { question: string; answer: string }[];
   timeRemaining: number;
   feedback: string | null;
@@ -121,6 +124,8 @@ function Genesis() {
   const [currentAnswer, setCurrentAnswer] = useState<string>("");
   const [inputMethod, setInputMethod] = useState<"voice" | "text">("voice");
   const [answerSubmitted, setAnswerSubmitted] = useState<boolean>(false);
+  const [extensions, setExtensions] = useState<string[]>([]);
+  const [canProceed, setCanProceed] = useState(false);
 
   // State - Speech Recognition
   const [recognition, setRecognition] = useState<SpeechRecognition | null>(
@@ -130,6 +135,13 @@ function Genesis() {
 
   // State - Speech Synthesis
   const [speaking, setSpeaking] = useState<boolean>(false);
+
+  // useEffect(() => {
+  //   detectExtensions().then((res) => {
+  //     setExtensions(res);
+  //     setCanProceed(res.length === 0);
+  //   });
+  // }, []);
 
   // Setup speech recognition on component mount
   useEffect(() => {
@@ -350,7 +362,9 @@ function Genesis() {
         jobRole,
         duration,
         status: "active",
-        currentQuestion: initialQuestion, // Set initial question here
+        currentQuestion: initialQuestion,
+        currentQuestionId: 1, // Start with question ID 1
+        isLoadingQuestion: false,
         answers: [],
         timeRemaining: duration * 60,
         feedback: null,
@@ -413,10 +427,10 @@ function Genesis() {
 
     try {
       setLoading(true);
-      console.log("Fetching question for session:", id); // Add this log
+
+      console.log("Fetching question for session:", id);
 
       const response = await fetch(`${API_URL}/get-question/${id}`);
-      console.log("Question response status:", response.status); // Add this log
 
       if (!response.ok) {
         const errorData = await response.json();
@@ -424,9 +438,9 @@ function Genesis() {
       }
 
       const data = await response.json();
-      console.log("Question data received:", data); // Add this log
+      console.log("Question data received:", data);
 
-      // Update session with new question
+      // Important: Use a single state update to change the question
       setSession((prev) => {
         if (!prev) return prev;
         return {
@@ -440,13 +454,12 @@ function Genesis() {
       setInterimTranscript("");
       setAnswerSubmitted(false);
     } catch (err) {
-      console.error("Question fetch error:", err); // Better error logging
+      console.error("Question fetch error:", err);
       setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
   };
-
   // Submit answer
   const submitAnswer = async () => {
     if (
@@ -460,9 +473,15 @@ function Genesis() {
 
     try {
       setLoading(true);
+      setError(null);
 
-      console.log("Submitting answer:", currentAnswer.trim()); // Add this log
+      // Store the current question text for the answer pair
+      const questionText = session.currentQuestion;
 
+      console.log("Submitting answer for question:", questionText);
+      console.log("Answer:", currentAnswer.trim());
+
+      // Make API call to submit answer
       const response = await fetch(
         `${API_URL}/submit-answer/${session.sessionId}`,
         {
@@ -470,47 +489,70 @@ function Genesis() {
           headers: {
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ answer: currentAnswer.trim() }),
+          body: JSON.stringify({
+            answer: currentAnswer.trim(),
+            question: questionText, // Include question in the request for extra safety
+          }),
         }
       );
-
-      console.log("Submit response status:", response.status); // Add this log
 
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.error || "Failed to submit answer");
       }
 
-      // Store answer locally in session
-      setSession((prev) => {
-        if (!prev) return prev;
-        return {
-          ...prev,
-          answers: [
-            ...prev.answers,
-            {
-              question: prev.currentQuestion || "",
-              answer: currentAnswer.trim(),
-            },
-          ],
-        };
-      });
+      // Verify the answer was recorded successfully
+      const responseData = await response.json();
+      console.log("Submit response:", responseData);
 
-      // Mark answer as submitted
-      setAnswerSubmitted(true);
+      if (responseData.success) {
+        // Store answer locally in session WITHOUT changing current question
+        setSession((prev) => {
+          if (!prev) return prev;
+          return {
+            ...prev,
+            answers: [
+              ...prev.answers,
+              {
+                question: questionText,
+                answer: currentAnswer.trim(),
+              },
+            ],
+          };
+        });
+
+        // Set answer submitted flag
+        setAnswerSubmitted(true);
+        console.log("Answer successfully submitted and recorded");
+      } else {
+        throw new Error(
+          "Server indicated answer was not recorded successfully"
+        );
+      }
     } catch (err) {
-      console.error("Submit error:", err); // Better error logging
+      console.error("Submit error:", err);
       setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
     } finally {
       setLoading(false);
     }
   };
 
+  // And then modify the Submit button to use this updated function
+
   // End interview early
   const endInterview = async () => {
     if (!session?.sessionId) return;
 
-    if (
+    // Check if there are any answers recorded
+    if (session.answers.length === 0) {
+      if (
+        !confirm(
+          "You haven't submitted any answers yet. Are you sure you want to end the interview?"
+        )
+      ) {
+        return;
+      }
+    } else if (
       !confirm(
         "Are you sure you want to end the interview? This will generate your feedback."
       )
@@ -520,7 +562,33 @@ function Genesis() {
 
     try {
       setLoading(true);
+      setError(null);
 
+      // First, let's verify all answers were properly recorded on the backend
+      // by checking the number of QA pairs stored
+      const verifyResponse = await fetch(
+        `${API_URL}/check-qa-count/${session.sessionId}`
+      );
+      const verifyData = await verifyResponse.json();
+
+      // If the backend has fewer QA pairs than our frontend, something is wrong
+      if (verifyData.qa_count < session.answers.length) {
+        console.warn(
+          `Answer count mismatch: Frontend has ${session.answers.length}, backend has ${verifyData.qa_count}`
+        );
+
+        // We could add recovery logic here if needed
+        if (
+          !confirm(
+            `Some of your answers may not have been properly recorded (${verifyData.qa_count} of ${session.answers.length}). Continue anyway?`
+          )
+        ) {
+          setLoading(false);
+          return;
+        }
+      }
+
+      // Now end the interview
       const response = await fetch(
         `${API_URL}/end-interview/${session.sessionId}`,
         {
@@ -542,14 +610,17 @@ function Genesis() {
         };
       });
 
-      // Get feedback
-      await getFeedback();
+      // Get feedback with a short delay to ensure backend processing is complete
+      setTimeout(async () => {
+        await getFeedback();
 
-      // Move to feedback step
-      setStep("feedback");
+        // Move to feedback step
+        setStep("feedback");
+        setLoading(false);
+      }, 1000);
     } catch (err) {
+      console.error("End interview error:", err);
       setError(`Error: ${err instanceof Error ? err.message : String(err)}`);
-    } finally {
       setLoading(false);
     }
   };
@@ -877,8 +948,8 @@ function Genesis() {
                       ) : (
                         <div className="text-center w-full text-gray-500">
                           {loading
-                            ? "Loading question..."
-                            : "Waiting for first question..."}
+                            ? "Loading next question..."
+                            : "Waiting for question..."}
                         </div>
                       )}
                     </div>
@@ -1079,27 +1150,147 @@ function Genesis() {
                         <Button
                           onClick={async () => {
                             if (
-                              session?.sessionId &&
-                              session.currentQuestion &&
-                              currentAnswer.trim()
+                              !session?.sessionId ||
+                              !session.currentQuestion ||
+                              !currentAnswer.trim()
                             ) {
-                              await submitAnswer(); // Submit current answer first
-                              await getNextQuestion(session.sessionId); // Then get the next question
-                            } else {
                               setError(
-                                "Please answer the question before submitting"
+                                "Please provide an answer before submitting"
                               );
+                              return;
+                            }
+
+                            try {
+                              setLoading(true);
+                              setError(null);
+
+                              // Store the current question text for the answer pair
+                              const questionText = session.currentQuestion;
+
+                              // Make API call to submit answer
+                              const response = await fetch(
+                                `${API_URL}/submit-answer/${session.sessionId}`,
+                                {
+                                  method: "POST",
+                                  headers: {
+                                    "Content-Type": "application/json",
+                                  },
+                                  body: JSON.stringify({
+                                    answer: currentAnswer.trim(),
+                                  }),
+                                }
+                              );
+
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(
+                                  errorData.error || "Failed to submit answer"
+                                );
+                              }
+
+                              // Store answer locally in session WITHOUT changing current question
+                              setSession((prev) => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  answers: [
+                                    ...prev.answers,
+                                    {
+                                      question: questionText,
+                                      answer: currentAnswer.trim(),
+                                    },
+                                  ],
+                                };
+                              });
+
+                              // Set answer submitted flag to enable the Next Question button
+                              setAnswerSubmitted(true);
+                            } catch (err) {
+                              console.error("Submit error:", err);
+                              setError(
+                                `Error: ${
+                                  err instanceof Error
+                                    ? err.message
+                                    : String(err)
+                                }`
+                              );
+                            } finally {
+                              setLoading(false);
                             }
                           }}
                           variant="outline"
                           size="sm"
+                          disabled={loading || !currentAnswer.trim()}
                         >
                           Submit
                         </Button>
 
                         <Button
                           variant="default"
-                          onClick={() => getNextQuestion()}
+                          onClick={async () => {
+                            if (!session?.sessionId) return;
+
+                            try {
+                              setLoading(true);
+
+                              // Important: Clear current question BEFORE fetching the next one
+                              setSession((prev) => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  currentQuestion: null, // Clear the question immediately
+                                };
+                              });
+
+                              // Fetch the next question from the API with cache-busting query param
+                              const timestamp = Date.now(); // Add timestamp to prevent caching
+                              const response = await fetch(
+                                `${API_URL}/get-question/${session.sessionId}?t=${timestamp}`,
+                                {
+                                  headers: {
+                                    "Cache-Control":
+                                      "no-cache, no-store, must-revalidate",
+                                    Pragma: "no-cache",
+                                    Expires: "0",
+                                  },
+                                }
+                              );
+
+                              if (!response.ok) {
+                                const errorData = await response.json();
+                                throw new Error(
+                                  errorData.error || "Failed to get question"
+                                );
+                              }
+
+                              const data = await response.json();
+
+                              // Set the new question
+                              setSession((prev) => {
+                                if (!prev) return prev;
+                                return {
+                                  ...prev,
+                                  currentQuestion: data.question,
+                                };
+                              });
+
+                              // Reset answer state
+                              setCurrentAnswer("");
+                              setInterimTranscript("");
+                              setAnswerSubmitted(false);
+                            } catch (err) {
+                              console.error("Question fetch error:", err);
+                              setError(
+                                `Error: ${
+                                  err instanceof Error
+                                    ? err.message
+                                    : String(err)
+                                }`
+                              );
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
                           disabled={!answerSubmitted || loading}
                         >
                           Next Question
