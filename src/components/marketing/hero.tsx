@@ -234,7 +234,7 @@ const Hero = () => {
               </span>
               <span className="backdrop absolute inset-[1px] rounded-full bg-background transition-colors duration-200 group-hover:bg-neutral-800" />
               <span className="z-10 py-0.5 text-sm text-neutral-100 flex items-center">
-                <span className="px-2 py-[0.5px] h-[18px] tracking-wide flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-blue-600 text-[9px] font-medium mr-2 text-white">
+                <span className="px-2 py-[0.5px] h-[18px] tracking-wide flex items-center justify-center rounded-full bg-gradient-to-r from-sky-400 to-orange-800 text-[9px] font-medium mr-2 text-white">
                   NEW
                 </span>
                 Explore the Exponential Growth
@@ -244,7 +244,7 @@ const Hero = () => {
           <Container delay={0.15}>
             <h1 className="text-4xl md:text-4xl lg:text-7xl font-bold text-center !leading-tight max-w-4xl mx-auto">
               Transform your <span className="">dream </span>
-              with AI Precision
+              with AI <span className="text-blue-500">Precision</span>
             </h1>
           </Container>
           <Container delay={0.2}>
@@ -297,7 +297,7 @@ const Hero = () => {
                   ) : (
                     <>
                       <MicOff className="h-4 w-4" />
-                      <span>Enable Voice</span>
+                      <span>Enable Voice Guide</span>
                     </>
                   )}
                 </button>
@@ -308,7 +308,7 @@ const Hero = () => {
             <div className="flex items-center justify-center mt-6 gap-x-4">
               <Link href="/dashboard" className="flex items-center gap-2 group">
                 <RainbowButton className="dark:text-white">
-                  Start Free Trial
+                  Start The Trial
                   <ArrowRightIcon className="size-4 group-hover:translate-x-1 transition-all duration-300" />
                 </RainbowButton>
               </Link>

@@ -2,9 +2,9 @@ import { useEffect, useState } from "react";
 import { askGemini } from "@/utils/gemini";
 import { toast } from "sonner";
 
-// More descriptive keywords for better matching
 const keywords = {
   dashboard: ["/dashboard", "dashboard", "home", "main page"],
+  genesis: ["/genesis", "genesis", "genesis page"],
   login: ["/login", "/auth", "login", "sign in", "log in", "authenticate"],
 };
 
@@ -37,7 +37,7 @@ export default function useVoiceAssistant(enabled: boolean) {
     // Trigger recognition after speech ends
     utterance.onend = () => {
       window.dispatchEvent(new Event("voice:speechEnd"));
-      if (onEnd) onEnd(); // 🔥 this is key
+      if (onEnd) onEnd();
     };
 
     window.dispatchEvent(new Event("voice:speechStart"));
@@ -86,10 +86,9 @@ export default function useVoiceAssistant(enabled: boolean) {
       }
     }
 
-    // Welcome message with a more casual, human-like tone
     setTimeout(() => {
       speakResponse(
-        "Hi there! I'm Intera, a platform where you can grab your dream job by preparing mock. You can ask me about interviews or just say things like 'go to dashboard' or 'login' to navigate around.",
+        "Hi there! I'm Intera, a platform where you can grab your dream job by preparing mock Interviews. You can ask me about interviews or just say things like 'go to dashboard' or 'login' to navigate around.",
         () => {
           startRecognition();
         }
@@ -98,17 +97,16 @@ export default function useVoiceAssistant(enabled: boolean) {
 
     const startRecognition = () => {
       try {
+        window.speechSynthesis?.cancel();
+
         recognition.start();
         setIsListening(true);
         console.log("Voice recognition started");
-        // Dispatch event to show listening animation
         window.dispatchEvent(new Event("voice:listeningStart"));
       } catch (err) {
         console.error("Recognition error:", err);
         setIsListening(false);
-        // Dispatch event to hide listening animation
         window.dispatchEvent(new Event("voice:listeningEnd"));
-        // Retry after a while
         setTimeout(() => startRecognition(), 3000);
       }
     };
@@ -129,6 +127,7 @@ export default function useVoiceAssistant(enabled: boolean) {
           transcript.includes("take me") ||
           transcript.includes("login") ||
           transcript.includes("dashboard") ||
+          transcript.includes("genesis") ||
           transcript.includes("sign in");
 
         if (isNavigationCommand) {
@@ -167,8 +166,6 @@ export default function useVoiceAssistant(enabled: boolean) {
           }
         }
 
-        // Not a navigation command or no matching route, treat as a conversation
-        // Use Gemini for a conversation with more casual, friendly prompt
         const geminiResponse = await askGemini(
           `The user said: "${transcript}". 
            Respond in a very casual, conversational way as a friendly voice assistant for a job matching portal.
@@ -181,11 +178,9 @@ export default function useVoiceAssistant(enabled: boolean) {
 
         console.log("Gemini conversational response:", geminiResponse);
 
-        // Speak the response from Gemini directly
         speakResponse(geminiResponse);
         toast.success(geminiResponse, { duration: 3000 });
 
-        // Restart listening after a delay to allow for the response
         setTimeout(() => startRecognition(), geminiResponse.length * 80); // Timing based on text length
       } catch (error) {
         console.error("Error processing voice command:", error);
@@ -227,7 +222,6 @@ export default function useVoiceAssistant(enabled: boolean) {
       console.log("Voice recognition ended");
     };
 
-    // Start voice recognition after a short delay to allow the welcome message
     setTimeout(() => startRecognition(), 3000);
 
     return () => {

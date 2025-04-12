@@ -56,3 +56,34 @@ export interface InterviewSession {
   timeRemaining: number;
   feedback: string | null;
 }
+
+export interface AnalysisData {
+  faceDetected: boolean;
+  confidence: number;
+  emotion: string;
+  emotionScores: Record<string, number>;
+  confidenceHistory: number[];
+  processedImage?: string;
+}
+
+export interface InterviewStats {
+  answersCount: number;
+  avgConfidence: number;
+  duration: string;
+}
+
+export interface VoiceInputProps {
+  value: string;
+  onInputChange: (value: string) => void;
+  disabled?: boolean;
+}
+
+export interface EmotionAnalysisProps {
+  analysisData?: AnalysisData;
+}
+
+export interface InterviewFeedbackProps {
+  feedback?: string;
+  stats: InterviewStats;
+  onNewInterview: () => void;
+}

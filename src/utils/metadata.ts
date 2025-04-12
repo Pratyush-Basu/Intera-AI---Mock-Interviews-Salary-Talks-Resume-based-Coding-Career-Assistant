@@ -16,8 +16,8 @@ interface MetadataProps {
 }
 
 export const generateMetadata = ({
-  title = `Intera - AI-Powered Project Management & Team Collaboration`,
-  description = `Intera is an intelligent project management platform that transforms how teams work together. Leverage AI to automate workflows, enhance collaboration, and boost productivity. Experience smarter project management today.`,
+  title = `Intera - AI-Powered Interview Platform & Resume enhancer`,
+  description = `Intera is an intelligent interview platform that transforms your dream job into reality. Leverage AI to automate workflows, enhance collaboration, and boost experience. Experience smarter interview platform.`,
   icons = [
     {
       rel: "icon",
@@ -32,16 +32,16 @@ export const generateMetadata = ({
   ],
   noIndex = false,
   keywords = [
-    "AI marketing automation",
-    "social media marketing",
+    "AI interview automation",
+    "social media interview",
     "content generation",
-    "marketing analytics",
+    "interview analytics",
     "campaign management",
-    "multilingual marketing",
+    "multilingual interview",
     "AI copywriting",
-    "marketing workflow",
+    "interview workflow",
     "performance tracking",
-    "digital marketing tools",
+    "digital interview tools",
   ],
   author = process.env.NEXT_PUBLIC_AUTHOR_NAME,
   type = "website",

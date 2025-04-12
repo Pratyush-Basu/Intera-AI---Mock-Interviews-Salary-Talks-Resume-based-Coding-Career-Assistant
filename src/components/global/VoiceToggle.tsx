@@ -75,7 +75,7 @@ const VoiceToggle = () => {
           ) : (
             <>
               <MicOff className="h-4 w-4" />
-              <span>Enable Voice</span>
+              <span>Enable Voice Guide</span>
             </>
           )}
         </button>

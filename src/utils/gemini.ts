@@ -1,4 +1,3 @@
-// utils/gemini.ts
 export async function askGemini(prompt: string): Promise<string> {
   const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY;
 
@@ -8,7 +7,6 @@ export async function askGemini(prompt: string): Promise<string> {
   }
 
   try {
-    // Using Gemini 1.5 Flash model with proper formatting
     const response = await fetch(
       "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" +
         apiKey,
@@ -17,10 +15,10 @@ export async function askGemini(prompt: string): Promise<string> {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.4, // Balanced for conversational responses
+            temperature: 0.4,
             topP: 0.8,
             topK: 40,
-            maxOutputTokens: 100, // Keep responses concise for voice
+            maxOutputTokens: 100,
           },
         }),
         headers: {
