@@ -5,6 +5,7 @@ import { base, heading } from "@/constants";
 import { Toaster } from "@/components/ui/sonner";
 import { subheading } from "@/constants/fonts";
 import { ClientSessionProvider } from "@/components/providers/session-provider";
+// Remove the direct import of VoiceLottie since it will be managed by VoiceHandler
 
 export const metadata = generateMetadata();
 
@@ -25,8 +26,9 @@ export default function RootLayout({
         suppressHydrationWarning
       >
         <ClientSessionProvider>
-          <Toaster richColors theme="dark" position="top-right" />
+          <Toaster />
           {children}
+          {/* Remove VoiceLottie from here as it's now managed by VoiceHandler */}
         </ClientSessionProvider>
       </body>
     </html>

@@ -47,7 +47,7 @@ export const generateMetadata = ({
   type = "website",
 }: MetadataProps = {}): Metadata => {
   const metadataBase = new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://vertra-ai.vercel.app"
+    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000/"
   );
 
   return {

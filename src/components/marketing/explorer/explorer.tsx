@@ -155,9 +155,9 @@ export default function Explorar() {
             </div>
 
             <div>
-              <h2 className="text-xl text-white font-semibold">
+              {/* <h2 className="text-xl text-white font-semibold">
                 Top Job Matches from Indeed:
-              </h2>
+              </h2> */}
               <ul className="list-disc pl-6">
                 {result.job_matches.map((job: JobMatch, index: number) => (
                   <li key={index}>
