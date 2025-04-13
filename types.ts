@@ -87,3 +87,40 @@ export interface InterviewFeedbackProps {
   stats: InterviewStats;
   onNewInterview: () => void;
 }
+
+export interface TestCase {
+  input: string;
+  expectedOutput: string;
+}
+
+export interface CodingQuestion {
+  id: string;
+  title: string;
+  description: string;
+  difficulty: "easy" | "medium" | "hard";
+  timeLimit: number;
+  testCases: TestCase[];
+  starterCode?: string;
+}
+
+export interface CVAnalysisResult {
+  skillLevel: "beginner" | "intermediate" | "advanced";
+  questions: CodingQuestion[];
+}
+
+export interface CodeEvaluation {
+  isCorrect: boolean;
+  timeComplexity: string;
+  spaceComplexity: string;
+  optimizations: string[];
+  feedback: string;
+  errors?: string[];
+}
+
+export interface UserSubmission {
+  questionId: string;
+  code: string;
+  submittedAt: Date;
+  executionTime?: number;
+  evaluation?: CodeEvaluation;
+}

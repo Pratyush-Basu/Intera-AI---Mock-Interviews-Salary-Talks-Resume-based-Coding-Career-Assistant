@@ -40,7 +40,17 @@ const Navbar = () => {
             <ul className="flex items-center gap-8">
               {NAV_LINKS.map((link, index) => (
                 <li key={index} className="text-sm font-medium">
-                  <Link href={link.href}>{link.name}</Link>
+                  {link.href.startsWith("http") ? (
+                    <a
+                      href={link.href}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      {link.name}
+                    </a>
+                  ) : (
+                    <Link href={link.href}>{link.name}</Link>
+                  )}
                 </li>
               ))}
             </ul>

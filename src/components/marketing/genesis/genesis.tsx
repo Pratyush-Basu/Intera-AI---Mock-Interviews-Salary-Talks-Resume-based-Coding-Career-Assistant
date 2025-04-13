@@ -135,6 +135,8 @@ function Genesis() {
     null
   );
   const [interimTranscript, setInterimTranscript] = useState<string>("");
+  const videoPlayerRef = useRef<HTMLVideoElement>(null);
+  const [isAISpeaking, setIsAISpeaking] = useState(false);
 
   // State - Speech Synthesis
   const [speaking, setSpeaking] = useState<boolean>(false);
@@ -719,38 +721,34 @@ function Genesis() {
   // Speak text using browser's speech synthesis
   const speakText = (text: string) => {
     if ("speechSynthesis" in window) {
-      // Cancel any existing speech without triggering error
       window.speechSynthesis.cancel();
-
       const utterance = new SpeechSynthesisUtterance(text);
 
-      utterance.rate = 1.0;
-      utterance.pitch = 1.0;
-      utterance.volume = 1.0;
-
-      const voices = window.speechSynthesis.getVoices();
-      const englishVoice = voices.find((voice) => voice.lang.includes("en-"));
-      if (englishVoice) {
-        utterance.voice = englishVoice;
-      }
-
-      utterance.onstart = () => setSpeaking(true);
-
-      utterance.onend = () => setSpeaking(false);
-
-      utterance.onerror = (event) => {
-        if (event.error === "interrupted") {
-          console.warn("Speech was interrupted by another action.");
-        } else {
-          console.error(
-            "Speech synthesis error:",
-            event.error || "Unknown error"
-          );
+      // Start handlers
+      utterance.onstart = () => {
+        setIsAISpeaking(true);
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current
+            .play()
+            .catch((e) => console.error("Video play error:", e));
         }
-        setSpeaking(false);
       };
 
-      // Speak the text
+      // End handlers
+      utterance.onend = () => {
+        setIsAISpeaking(false);
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current.pause();
+        }
+      };
+
+      utterance.onerror = () => {
+        setIsAISpeaking(false);
+        if (videoPlayerRef.current) {
+          videoPlayerRef.current.pause();
+        }
+      };
+
       window.speechSynthesis.speak(utterance);
     }
   };
@@ -953,14 +951,25 @@ function Genesis() {
                   <CardHeader className="pb-2">
                     <CardTitle>Camera Feed</CardTitle>
                   </CardHeader>
-                  <CardContent>
-                    <div className="relative aspect-video bg-gray-900 rounded-md overflow-hidden mb-4">
+                  <CardContent className="flex flex-col gap-4">
+                    {/* Main camera feed or video */}
+                    <div className="aspect-video bg-gray-900 rounded-md overflow-hidden">
                       <video
                         ref={videoRef}
                         autoPlay
                         playsInline
                         muted
                         className="w-full h-full object-cover"
+                      />
+                    </div>
+
+                    <div className="aspect-video bg-gray-900 rounded-md overflow-hidden">
+                      <video
+                        ref={videoPlayerRef}
+                        className="w-full h-full object-cover"
+                        loop
+                        muted
+                        src="/videos/avatar.mp4" // Update with your video path
                       />
                     </div>
                   </CardContent>

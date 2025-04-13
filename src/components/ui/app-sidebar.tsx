@@ -80,6 +80,10 @@ const data = {
           url: "/explorer",
         },
         {
+          title: "Codekshetra",
+          url: "/codekshetra",
+        },
+        {
           title: "Quantum",
           url: "/quantum",
         },

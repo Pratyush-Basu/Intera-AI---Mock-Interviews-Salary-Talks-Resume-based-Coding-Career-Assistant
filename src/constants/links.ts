@@ -7,10 +7,10 @@ export const NAV_LINKS = [
     name: "Features",
     href: "#features",
   },
-  // {
-  //   name: "Blog",
-  //   href: "#",
-  // },
+  {
+    name: "Build Resume",
+    href: "http://resai2f.vercel.app",
+  },
   {
     name: "Contact",
     href: "#",

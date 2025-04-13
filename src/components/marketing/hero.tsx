@@ -252,6 +252,9 @@ const Hero = () => {
               AI-powered Job Matching Portal and resume enhancer with Mock
               Interview platform.
             </p>
+            <p className="max-w-xl mx-auto mt-2 text-base lg:text-lg text-center text-muted-foreground">
+              If your code is running fine, Don't ever touch it.
+            </p>
 
             {/* Voice toggle directly in the Hero component */}
             <div className="flex justify-center mt-4">
