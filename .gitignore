@@ -23,7 +23,7 @@
 
 /venv_emotion
 /__pycache__
-
+/python
 
 # misc
 .DS_Store
