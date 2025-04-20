@@ -813,10 +813,46 @@ function Genesis() {
   const formatFeedback = (): string => {
     if (!session?.feedback) return "";
 
-    return session.feedback
-      .replace(/\n\n/g, "</p><p>")
-      .replace(/\n/g, "<br>")
-      .replace(/(\d+\.\s+[^:]+):/g, "<strong>$1:</strong>");
+    const feedback = session.feedback;
+
+    // First handle markdown bold formatting
+    let formattedFeedback = feedback.replace(
+      /\*\*(.*?)\*\*/g,
+      "<strong>$1</strong>"
+    );
+
+    // Convert bullet points for better organization
+    formattedFeedback = formattedFeedback.replace(/- ([^\n]+)/g, "<li>$1</li>");
+
+    // Wrap bullet point lists in <ul> tags
+    formattedFeedback = formattedFeedback.replace(
+      /<li>([^<]+)<\/li>(\s*<li>)/g,
+      "<li>$1</li>$2"
+    );
+    formattedFeedback = formattedFeedback.replace(
+      /(<li>(?:[^<]+<\/li>\s*)+)/g,
+      "<ul>$1</ul>"
+    );
+
+    // Format numbered lists (like 1. 2. 3.) and wrap with section headers
+    formattedFeedback = formattedFeedback.replace(
+      /(\d+\.\s+)([^:]+):([^\n]+)/g,
+      '<div class="feedback-section"><h3>$2</h3><p>$3</p></div>'
+    );
+
+    // Format sections with headers without numbers
+    formattedFeedback = formattedFeedback.replace(
+      /([A-Z][^:]+):([^\n]+)/g,
+      '<div class="feedback-section"><h3>$1</h3><p>$2</p></div>'
+    );
+
+    // Convert paragraphs properly
+    formattedFeedback = formattedFeedback.replace(/\n\n/g, "</p><p>");
+
+    // Convert remaining newlines to <br> tags
+    formattedFeedback = formattedFeedback.replace(/\n/g, "<br>");
+
+    return formattedFeedback;
   };
 
   // Handle file selection
@@ -1314,16 +1350,89 @@ function Genesis() {
                       </CardHeader>
                       <CardContent>
                         {session?.feedback ? (
-                          <div
-                            className="prose max-w-none"
-                            dangerouslySetInnerHTML={{
-                              __html: `<p>${formatFeedback()}</p>`,
-                            }}
-                          />
+                          <div className="space-y-6">
+                            {/* Add custom CSS for the feedback sections */}
+                            <style jsx global>{`
+                              .feedback-section {
+                                margin-bottom: 1.5rem;
+                                padding: 1rem;
+                                border-radius: 0.5rem;
+                                background-color: #f8fafc;
+                                border-left: 4px solid #3b82f6;
+                              }
+                              .feedback-section h3 {
+                                font-size: 1.1rem;
+                                font-weight: 600;
+                                margin-bottom: 0.5rem;
+                                color: #1e40af;
+                              }
+                              .feedback-section p {
+                                color: #334155;
+                              }
+                              ul {
+                                list-style-type: disc;
+                                padding-left: 1.5rem;
+                                margin: 0.75rem 0;
+                              }
+                              li {
+                                margin-bottom: 0.5rem;
+                              }
+                              .feedback-overview {
+                                background-color: #eff6ff;
+                                padding: 1.25rem;
+                                border-radius: 0.5rem;
+                                margin-bottom: 1.5rem;
+                              }
+                              .feedback-summary {
+                                font-size: 1.1rem;
+                                font-weight: 500;
+                                margin-bottom: 1rem;
+                              }
+                            `}</style>
+
+                            {/* Overview section at the top */}
+                            <div className="feedback-overview">
+                              <h3 className="feedback-summary text-gray-700">
+                                Interview Performance Summary
+                              </h3>
+                              <p className="text-gray-700">
+                                Overall Score:{" "}
+                                <span className="font-bold text-blue-600">
+                                  {extractScoreFromFeedback()}/10
+                                </span>
+                              </p>
+                            </div>
+
+                            {/* Main feedback content with improved formatting */}
+                            <div
+                              className="prose max-w-none"
+                              dangerouslySetInnerHTML={{
+                                __html: `<div>${formatFeedback()}</div>`,
+                              }}
+                            />
+                          </div>
                         ) : (
-                          <p className="text-gray-500 text-center py-4">
-                            No feedback available
-                          </p>
+                          <div className="text-gray-500 text-center py-8 flex flex-col items-center">
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              className="h-12 w-12 text-gray-400 mb-3"
+                              fill="none"
+                              viewBox="0 0 24 24"
+                              stroke="currentColor"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={1.5}
+                                d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                              />
+                            </svg>
+                            <p>No feedback available yet</p>
+                            <p className="text-sm mt-2">
+                              Please wait while we generate your interview
+                              analysis
+                            </p>
+                          </div>
                         )}
                       </CardContent>
                     </Card>

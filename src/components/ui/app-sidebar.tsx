@@ -85,7 +85,7 @@ const data = {
         },
         {
           title: "Quantum",
-          url: "/quantum",
+          url: "https://career-coach-ai-assistant-1.onrender.com/",
         },
       ],
     },

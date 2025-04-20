@@ -154,6 +154,11 @@ export default function useVoiceAssistant(enabled: boolean) {
             speakResponse(responseText);
             toast.success(responseText, { duration: 2500 });
 
+            // Stop recognition and listening
+            recognition.stop();
+            setIsListening(false);
+            window.dispatchEvent(new Event("voice:listeningEnd"));
+
             // Navigate after a short delay
             setTimeout(() => {
               window.dispatchEvent(
@@ -161,8 +166,6 @@ export default function useVoiceAssistant(enabled: boolean) {
               );
             }, 1000);
 
-            // Restart listening after navigation delay
-            setTimeout(() => startRecognition(), 4000);
             return;
           }
         }
